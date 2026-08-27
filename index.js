@@ -90,7 +90,9 @@ const seoCmsIndex = path.join(seoCmsDir, 'index.html');
 app.use((req, res, next) => {
   if (req.method !== 'GET' && req.method !== 'HEAD') return next();
   const pathname = req.path.replace(/\/+$/, '') || '/';
-  if (pathname !== '/seo-cms') return next();
+  if (pathname !== '/seo-cms' && pathname !== '/api/seo-cms') return next();
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+  res.set('Pragma', 'no-cache');
   return res.sendFile(seoCmsIndex);
 });
 app.use(

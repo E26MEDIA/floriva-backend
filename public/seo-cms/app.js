@@ -36,6 +36,9 @@ async function api(path, options = {}) {
     throw new Error('Cannot reach the API. Open https://api.florivagifts.com/seo-cms/ and check floriva-backend is online.');
   }
   const data = await res.json().catch(() => ({}));
+  if (res.status === 429) {
+    throw new Error(data.message || 'Too many login attempts. Restart floriva-backend on the server, wait a minute, then try once.');
+  }
   if (res.status === 401) {
     if (path !== '/admin/login') logout();
     throw new Error(data.message || 'Invalid username or password');
@@ -65,7 +68,7 @@ const loginButton = qs('#login-submit');
 async function handleLogin(event) {
   event.preventDefault();
   const err = qs('#login-error');
-  err.hidden = true;
+  if (err) err.textContent = '';
   if (loginButton) {
     loginButton.disabled = true;
     loginButton.textContent = 'Signing in…';
@@ -82,8 +85,7 @@ async function handleLogin(event) {
     localStorage.setItem(TOKEN_KEY, token);
     showApp();
   } catch (error) {
-    err.hidden = false;
-    err.textContent = error.message;
+    if (err) err.textContent = error.message;
   } finally {
     if (loginButton) {
       loginButton.disabled = false;
