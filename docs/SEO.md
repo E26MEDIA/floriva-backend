@@ -1,9 +1,10 @@
 # SEO & Blog CMS
 
-Admins can manage SEO and publish blogs **from the Floriva admin CMS**, using:
+Admins can manage SEO and publish blogs from **Floriva Admin** (`admin.florivagifts.com`), the same panel as Banner & Images.
 
-- CMS (admin panel): `https://api.florivagifts.com/api/cms/blog`
-- Same username/password as `https://admin.florivagifts.com`
+- Add the Blog page with [admin-panel/INTEGRATE.md](../admin-panel/INTEGRATE.md)
+- APIs: `/api/admin/blog` (Bearer admin JWT, same as products)
+- Temporary HTML CMS remains at `/api/cms/blog` until the admin page is wired in
 
 On **Blog → New post**, upload a featured image and use **Insert image + placement** (left / center / right / full width). The storefront should wrap HTML in `.blog-content` and load `/blog-content.css`.
 
