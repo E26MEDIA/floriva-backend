@@ -49,11 +49,11 @@ test('SEO CMS HTML loads scripts from an absolute /seo-cms path', () => {
   assert.match(html, /href="\/seo-cms\/styles\.css"/);
 });
 
-test('CORS allowlist includes the API host used by SEO CMS', () => {
-  const { buildAllowedOrigins } = require('../Middlewares/security');
-  const allowed = buildAllowedOrigins();
-  assert.equal(allowed.includes('https://api.florivagifts.com'), true);
-  assert.equal(allowed.includes('https://admin.florivagifts.com'), true);
+test('CORS allows Floriva hosts and does not throw on unknown origins', () => {
+  const { isAllowedOrigin } = require('../Middlewares/security');
+  assert.equal(isAllowedOrigin('https://api.florivagifts.com'), true);
+  assert.equal(isAllowedOrigin('https://www.florivagifts.com'), true);
+  assert.equal(isAllowedOrigin('https://evil.example'), false);
 });
 
 test('ensureUniqueSlug increments when taken', async () => {

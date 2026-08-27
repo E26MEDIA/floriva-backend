@@ -9,14 +9,6 @@ const generateAdminToken = (admin) =>
     { expiresIn: "7d" }
   );
 
-const cookieOptions = (req) => ({
-  httpOnly: true,
-  secure: req.secure || req.headers["x-forwarded-proto"] === "https",
-  sameSite: "lax",
-  path: "/",
-  maxAge: 7 * 24 * 60 * 60 * 1000,
-});
-
 const isFormLogin = (req) =>
   String(req.headers["content-type"] || "").includes("application/x-www-form-urlencoded");
 
@@ -96,10 +88,33 @@ exports.login = async (req, res) => {
     }
 
     const token = generateAdminToken(admin);
-    res.cookie(COOKIE_NAME, token, cookieOptions(req));
+    try {
+      res.cookie("floriva_admin_token", token, {
+        httpOnly: true,
+        secure: req.secure || req.headers["x-forwarded-proto"] === "https",
+        sameSite: "lax",
+        path: "/",
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+      });
+    } catch (cookieError) {
+      console.error("Admin cookie not set:", cookieError);
+    }
 
     if (isFormLogin(req)) {
-      return res.redirect(302, "/seo-cms/?v=7");
+      res.set("Content-Type", "text/html; charset=utf-8");
+      res.set("Cache-Control", "no-store");
+      return res.status(200).send(`<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>Signed in</title></head>
+<body style="font-family:Arial,sans-serif;background:#f7f3ee;padding:40px">
+  <p>Signed in. Opening SEO CMS…</p>
+  <p><a href="/seo-cms/?v=7">Continue</a></p>
+  <script>
+    localStorage.setItem("floriva_seo_cms_token", ${JSON.stringify(token)});
+    window.location.replace("/seo-cms/?v=7");
+  </script>
+</body>
+</html>`);
     }
 
     res.json({
@@ -112,7 +127,17 @@ exports.login = async (req, res) => {
       },
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error("Admin login failed:", error);
+    if (isFormLogin(req)) {
+      return res.redirect(
+        302,
+        "/api/cms?error=" + encodeURIComponent(error.message || "Login failed")
+      );
+    }
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Login failed",
+    });
   }
 };
 
