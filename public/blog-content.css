@@ -1,0 +1,96 @@
+/* WordPress-style blog image placement.
+   Load this on the storefront wherever post.content is rendered. */
+
+.blog-content {
+  overflow: auto;
+  line-height: 1.7;
+}
+
+.blog-content img,
+.blog-content figure img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+.blog-content .wp-caption,
+.blog-content .wp-block-image {
+  margin: 0 0 1.25em;
+  max-width: 100%;
+}
+
+.blog-content .wp-caption-text {
+  margin: 0.4em 0 0;
+  font-size: 0.9em;
+  color: #6b5c51;
+}
+
+.blog-content .alignleft {
+  float: left;
+  margin: 0.25em 1.5em 1em 0;
+}
+
+.blog-content .alignright {
+  float: right;
+  margin: 0.25em 0 1em 1.5em;
+}
+
+.blog-content .aligncenter {
+  display: block;
+  float: none;
+  margin: 0.75em auto 1.5em;
+}
+
+.blog-content .alignnone {
+  display: block;
+  float: none;
+  margin: 0.75em 0 1.25em;
+}
+
+.blog-content .alignfull {
+  display: block;
+  float: none;
+  width: 100%;
+  max-width: 100%;
+  margin: 1em 0;
+}
+
+.blog-content .size-small { width: 25%; }
+.blog-content .size-medium { width: 50%; }
+.blog-content .size-large { width: 75%; }
+.blog-content .size-full { width: 100%; }
+
+.blog-content .alignfull.size-small,
+.blog-content .alignfull.size-medium,
+.blog-content .alignfull.size-large,
+.blog-content .aligncenter.size-full,
+.blog-content .alignnone.size-full {
+  width: 100%;
+}
+
+.blog-content .aligncenter.size-small,
+.blog-content .aligncenter.size-medium,
+.blog-content .aligncenter.size-large {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.blog-featured.alignleft { text-align: left; }
+.blog-featured.aligncenter { text-align: center; }
+.blog-featured.alignright { text-align: right; }
+.blog-featured.alignfull img { width: 100%; }
+.blog-featured img { max-width: 100%; height: auto; }
+
+@media (max-width: 640px) {
+  .blog-content .alignleft,
+  .blog-content .alignright {
+    float: none;
+    width: 100%;
+    margin: 0.75em 0 1.25em;
+  }
+  .blog-content .size-small,
+  .blog-content .size-medium,
+  .blog-content .size-large {
+    width: 100%;
+  }
+}

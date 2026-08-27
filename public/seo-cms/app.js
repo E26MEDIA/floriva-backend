@@ -178,53 +178,89 @@ function surround(textarea, before, after = '') {
   textarea.focus();
 }
 
+function insertAtCursor(textarea, html) {
+  const start = textarea.selectionStart;
+  const end = textarea.selectionEnd;
+  textarea.setRangeText(html, start, end, 'end');
+  textarea.focus();
+  textarea.dispatchEvent(new Event('input'));
+}
+
+function escapeAttr(value) {
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;');
+}
+
+function featuredAlignOptions(selected = 'center') {
+  const choices = [
+    ['left', 'Left'],
+    ['center', 'Center'],
+    ['right', 'Right'],
+    ['full', 'Full width'],
+    ['none', 'None'],
+  ];
+  return choices.map(([value, label]) =>
+    `<option value="${value}" ${selected === value ? 'selected' : ''}>${label}</option>`
+  ).join('');
+}
+
+function blogToolbar() {
+  return `
+    <div class="toolbar">
+      <button type="button" data-h="h1">H1</button>
+      <button type="button" data-h="h2">H2</button>
+      <button type="button" data-h="h3">H3</button>
+      <button type="button" data-link="1">Internal link</button>
+      <button type="button" data-img="1">Insert image + placement</button>
+    </div>
+  `;
+}
+
+function blogContentFields(post = {}) {
+  const featured = post.featuredImage
+    ? `<p class="help">Current featured image: <a href="${escapeAttr(post.featuredImage)}" target="_blank" rel="noreferrer">${escapeAttr(post.featuredImage)}</a></p>`
+    : '';
+  return `
+      ${field('title', 'Blog title', post.title || '')}
+      ${field('slug', 'URL slug (leave blank to auto-generate)', post.slug || '')}
+      ${field('metaTitle', 'Meta title', post.metaTitle || '')}
+      ${field('metaDescription', 'Meta description', post.metaDescription || '', 'textarea')}
+      ${field('excerpt', 'Short excerpt', post.excerpt || '')}
+      <label>${post._id ? 'Replace featured image' : 'Featured image'} <input type="file" name="image" accept="image/*" /></label>
+      ${featured}
+      ${field('featuredImageAlt', 'Featured image ALT text', post.featuredImageAlt || '')}
+      <label>Featured image placement
+        <select name="featuredImageAlign">${featuredAlignOptions(post.featuredImageAlign || 'center')}</select>
+      </label>
+      ${blogToolbar()}
+      ${field('content', 'Content (HTML)', post.content || '', 'textarea')}
+      <div class="preview-wrap">
+        <p class="help">Live placement preview (how the image sits in the text)</p>
+        <div class="blog-content content-preview" data-preview></div>
+      </div>
+      <label>Status
+        <select name="status">
+          <option value="draft" ${post.status === 'draft' ? 'selected' : ''}>Draft</option>
+          <option value="published" ${post.status === 'published' ? 'selected' : ''}>Published</option>
+        </select>
+      </label>
+      ${field('robotsIndex', 'Index this post', post.robotsIndex !== false, 'checkbox')}
+  `;
+}
+
 async function renderBlog() {
   const { data } = await api('/admin/blog');
   panel.innerHTML = `
     <h2>Blog</h2>
-    <p class="help">Create and publish posts with title, URL slug, headings, images + ALT text, internal links, and meta tags.</p>
-    ${wrapForm(`
-      ${field('title', 'Blog title')}
-      ${field('slug', 'URL slug (leave blank to auto-generate)')}
-      ${field('metaTitle', 'Meta title')}
-      ${field('metaDescription', 'Meta description', '', 'textarea')}
-      ${field('excerpt', 'Short excerpt')}
-      <label>Featured image <input type="file" name="image" accept="image/*" /></label>
-      ${field('featuredImageAlt', 'Featured image ALT text')}
-      <div class="toolbar">
-        <button type="button" data-h="h1">H1</button>
-        <button type="button" data-h="h2">H2</button>
-        <button type="button" data-h="h3">H3</button>
-        <button type="button" data-link="1">Internal link</button>
-        <button type="button" data-img="1">Image with ALT</button>
-      </div>
-      ${field('content', 'Content (HTML)', '', 'textarea')}
-      <label>Status
-        <select name="status">
-          <option value="draft">Draft</option>
-          <option value="published">Published</option>
-        </select>
-      </label>
-      ${field('robotsIndex', 'Index this post', true, 'checkbox')}
-    `, 'Create post')}
+    <p class="help">Write posts like WordPress: upload images, then choose placement (left with text wrap, center, right with text wrap, or full width) and size. The storefront should render <code>content</code> as HTML and load <code>/blog-content.css</code>.</p>
+    ${wrapForm(blogContentFields(), 'Create post')}
     <div class="list">
       ${data.map((post) => `
         <form class="item" data-id="${post._id}">
           <h3>${post.title} <span class="muted">(${post.status})</span></h3>
-          ${field('title', 'Title', post.title)}
-          ${field('slug', 'URL slug', post.slug)}
-          ${field('metaTitle', 'Meta title', post.metaTitle)}
-          ${field('metaDescription', 'Meta description', post.metaDescription, 'textarea')}
-          ${field('content', 'Content', post.content, 'textarea')}
-          ${field('featuredImageAlt', 'Featured image ALT', post.featuredImageAlt)}
-          <label>Replace featured image <input type="file" name="image" accept="image/*" /></label>
-          <label>Status
-            <select name="status">
-              <option value="draft" ${post.status === 'draft' ? 'selected' : ''}>Draft</option>
-              <option value="published" ${post.status === 'published' ? 'selected' : ''}>Published</option>
-            </select>
-          </label>
-          ${field('robotsIndex', 'Index this post', post.robotsIndex, 'checkbox')}
+          ${blogContentFields(post)}
           <div class="actions">
             <button type="submit">Save</button>
             <button type="button" class="ghost delete">Delete</button>
@@ -239,14 +275,14 @@ async function renderBlog() {
   editor.addEventListener('submit', async (event) => {
     event.preventDefault();
     const fd = new FormData(editor);
-    if (!editor.querySelector('[name="robotsIndex"]').checked) fd.set('robotsIndex', 'false');
-    else fd.set('robotsIndex', 'true');
+    fd.set('robotsIndex', qs('[name="robotsIndex"]', editor).checked ? 'true' : 'false');
     await api('/admin/blog', { method: 'POST', body: fd });
     flash('Blog post created');
     render();
   });
 
   panel.querySelectorAll('.item').forEach((form) => {
+    bindEditorToolbar(form);
     form.addEventListener('submit', async (event) => {
       event.preventDefault();
       const fd = new FormData(form);
@@ -264,8 +300,18 @@ async function renderBlog() {
   });
 }
 
+function bindContentPreview(root) {
+  const textarea = qs('[name="content"]', root);
+  const preview = qs('[data-preview]', root);
+  if (!textarea || !preview) return;
+  const update = () => { preview.innerHTML = textarea.value || '<p class="muted">Start writing, then insert an image to see placement.</p>'; };
+  textarea.addEventListener('input', update);
+  update();
+}
+
 function bindEditorToolbar(root) {
   const textarea = qs('[name="content"]', root);
+  bindContentPreview(root);
   root.querySelectorAll('[data-h]').forEach((button) => {
     button.addEventListener('click', () => surround(textarea, `<${button.dataset.h}>`, `</${button.dataset.h}>`));
   });
@@ -274,21 +320,75 @@ function bindEditorToolbar(root) {
     if (!href) return;
     surround(textarea, `<a href="${href}">`, '</a>');
   });
-  qs('[data-img]', root)?.addEventListener('click', async () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.onchange = async () => {
-      const file = input.files[0];
-      if (!file) return;
-      const alt = prompt('ALT text for this image', '') || '';
-      const fd = new FormData();
-      fd.set('image', file);
-      fd.set('alt', alt);
+  qs('[data-img]', root)?.addEventListener('click', () => openMediaDialog(textarea));
+}
+
+function openMediaDialog(textarea) {
+  const existing = qs('#media-dialog');
+  if (existing) existing.remove();
+
+  const dialog = document.createElement('div');
+  dialog.id = 'media-dialog';
+  dialog.className = 'modal-backdrop';
+  dialog.innerHTML = `
+    <form class="modal card">
+      <h3>Insert image (WordPress-style placement)</h3>
+      <p class="help">Choose the file, then where it sits in the paragraph — same idea as WordPress Add Media.</p>
+      <label>Image file <input type="file" name="image" accept="image/*" required /></label>
+      <label>ALT text <input name="alt" placeholder="Describe the image" /></label>
+      <label>Caption <input name="caption" placeholder="Optional caption under the image" /></label>
+      <fieldset class="placement">
+        <legend>Placement</legend>
+        <label><input type="radio" name="align" value="left" /> Left (text wraps on the right)</label>
+        <label><input type="radio" name="align" value="center" checked /> Center</label>
+        <label><input type="radio" name="align" value="right" /> Right (text wraps on the left)</label>
+        <label><input type="radio" name="align" value="full" /> Full width</label>
+        <label><input type="radio" name="align" value="none" /> Inline / none</label>
+      </fieldset>
+      <label>Size
+        <select name="size">
+          <option value="small">Small (25%)</option>
+          <option value="medium">Medium (50%)</option>
+          <option value="large" selected>Large (75%)</option>
+          <option value="full">Original / full</option>
+        </select>
+      </label>
+      <p class="error" data-media-error hidden></p>
+      <div class="actions">
+        <button type="submit">Upload and insert</button>
+        <button type="button" class="ghost" data-cancel>Cancel</button>
+      </div>
+    </form>
+  `;
+  document.body.appendChild(dialog);
+
+  const close = () => dialog.remove();
+  qs('[data-cancel]', dialog).addEventListener('click', close);
+  dialog.addEventListener('click', (event) => {
+    if (event.target === dialog) close();
+  });
+
+  qs('form', dialog).addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const err = qs('[data-media-error]', dialog);
+    err.hidden = true;
+    const form = event.target;
+    const file = form.image.files[0];
+    if (!file) return;
+    const fd = new FormData();
+    fd.set('image', file);
+    fd.set('alt', form.alt.value);
+    fd.set('caption', form.caption.value);
+    fd.set('align', form.align.value);
+    fd.set('size', form.size.value);
+    try {
       const uploaded = await api('/admin/blog/images', { method: 'POST', body: fd });
-      surround(textarea, `<img src="${uploaded.data.url}" alt="${alt}" />`, '');
-    };
-    input.click();
+      insertAtCursor(textarea, `\n${uploaded.data.html}\n`);
+      close();
+    } catch (error) {
+      err.hidden = false;
+      err.textContent = error.message;
+    }
   });
 }
 

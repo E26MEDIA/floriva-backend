@@ -12,7 +12,7 @@ One-time website work is still required so the storefront **reads** these settin
 | Area | CMS tab | Notes |
 |------|---------|--------|
 | Meta title, meta description, URL, index/noindex | Pages | Changing a URL writes a 301 redirect |
-| Blog posts, headings H1–H3, images + ALT, internal links, meta, slug | Blog | Draft or publish |
+| Blog posts, headings H1–H3, images with placement + ALT + caption, featured image align, internal links, meta, slug | Blog | Draft or publish. Images insert as WordPress-style `<figure class="alignleft size-medium">`. Load `/blog-content.css` on the storefront. |
 | Product title, description, slug, meta, image ALT | Products | SEO-friendly `/product/{slug}` |
 | 301/302 redirects | Redirects | From URL → To URL |
 | XML sitemap, robots.txt, 404 copy, URL prefixes | Technical SEO | `/sitemap.xml` and `/robots.txt` on the API |
@@ -36,6 +36,7 @@ On the **public domain** (`www.florivagifts.com`), proxy `/sitemap.xml` and `/ro
 4. Inject GTM / GA4 from `/api/seo/public`.
 5. Use product and blog slugs in URLs (`/product/{slug}`, `/blog/{slug}`).
 6. Proxy sitemap and robots on the public hostname.
+7. Render blog `content` as HTML (not escaped text). Wrap it in `.blog-content` and include `https://api.florivagifts.com/blog-content.css` so left/center/right/full image placement works. Use `featuredImageAlign` (`left` | `center` | `right` | `full` | `none`) on the hero image.
 
 ## Google tools
 

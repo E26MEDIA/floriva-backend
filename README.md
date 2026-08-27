@@ -39,6 +39,7 @@ Admins can edit page meta tags, publish blogs, manage product SEO, 301 redirects
 
 - **CMS:** `/seo-cms/` (same admin login as the main panel)
 - **Guide:** [docs/SEO.md](docs/SEO.md)
+- **Blog images:** insert with WordPress-style placement (left/center/right/full + size). Storefront CSS: `/blog-content.css`
 
 
 ## Repos

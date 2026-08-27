@@ -88,6 +88,9 @@ app.use('/seo-cms', express.static(path.join(__dirname, 'public/seo-cms')));
 app.get('/seo-cms', (req, res) => {
   res.redirect(301, '/seo-cms/');
 });
+app.get('/blog-content.css', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public/blog-content.css'));
+});
 app.get('/sitemap.xml', getSitemap);
 app.get('/robots.txt', getRobots);
 app.get('/:filename', getSearchConsoleFile);

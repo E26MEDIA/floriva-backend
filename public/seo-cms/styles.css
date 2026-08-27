@@ -81,6 +81,39 @@ button.ghost, button.secondary {
 .toolbar { display: flex; gap: 6px; flex-wrap: wrap; margin: 8px 0; }
 .toolbar button { padding: 6px 10px; font-size: 12px; }
 .help { font-size: 13px; color: var(--muted); line-height: 1.6; }
+.preview-wrap { margin: 8px 0 16px; }
+.content-preview {
+  min-height: 120px;
+  padding: 16px;
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+  background: #fffdfb;
+}
+textarea[name="content"] { min-height: 220px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; }
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(30, 22, 16, 0.45);
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  z-index: 50;
+}
+.modal {
+  width: min(520px, 100%);
+  max-height: 90vh;
+  overflow: auto;
+  padding: 24px;
+}
+.placement {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin: 12px 0;
+}
+.placement legend { font-weight: 700; font-size: 13px; padding: 0 6px; }
+.placement label { font-weight: 500; display: flex; align-items: center; gap: 8px; margin: 6px 0; }
+.placement input { width: auto; margin: 0; }
 @media (max-width: 720px) {
   .row { grid-template-columns: 1fr; }
   .top { flex-direction: column; align-items: flex-start; gap: 12px; }
