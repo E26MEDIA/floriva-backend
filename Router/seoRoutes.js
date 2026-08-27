@@ -25,6 +25,7 @@ const handleBlogUpload = (req, res, next) => {
   });
 };
 
+router.get('/cms', seo.getCmsSignin);
 router.get('/seo/public', seo.getPublicConfig);
 router.get('/seo/resolve', seo.resolveSeo);
 router.get('/seo/sitemap.xml', seo.getSitemap);

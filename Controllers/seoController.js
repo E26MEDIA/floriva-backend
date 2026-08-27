@@ -7,6 +7,13 @@ const Category = require('../Model/Category');
 const { normalizePath, slugify, ensureUniqueSlug } = require('../Utils/slug');
 const { buildSitemapXml, buildRobotsTxt, joinUrl } = require('../Utils/seoXml');
 const { DEFAULT_PAGES, getOrCreateSettings } = require('../Utils/seoDefaults');
+const path = require('path');
+
+exports.getCmsSignin = (req, res) => {
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+  res.set('Pragma', 'no-cache');
+  res.sendFile(path.join(__dirname, '../public/seo-cms/signin.html'));
+};
 
 const parseBool = (value, defaultValue) => {
   if (value === undefined || value === null || value === '') return defaultValue;
@@ -55,7 +62,7 @@ exports.getPublicConfig = async (req, res) => {
         notFoundTitle: settings.notFoundTitle,
         notFoundBody: settings.notFoundBody,
         google: publicGoogle(settings),
-        cmsVersion: 'login-v6',
+        cmsVersion: 'login-v7',
       },
     });
   } catch (error) {

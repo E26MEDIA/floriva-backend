@@ -45,7 +45,7 @@ test('robots.txt includes sitemap and disallow rules', () => {
 test('SEO CMS HTML loads scripts from an absolute /seo-cms path', () => {
   const html = require('fs').readFileSync(require('path').join(__dirname, '../public/seo-cms/index.html'), 'utf8');
   assert.match(html, /action="\/api\/admin\/login"/);
-  assert.match(html, /src="\/seo-cms\/app\.js\?v=6"/);
+  assert.match(html, /src="\/seo-cms\/app\.js\?v=7"/);
   assert.match(html, /href="\/seo-cms\/styles\.css"/);
 });
 

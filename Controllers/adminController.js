@@ -73,7 +73,7 @@ exports.login = async (req, res) => {
 
     if (!username?.trim() || !password) {
       if (isFormLogin(req)) {
-        return res.redirect(302, "/seo-cms/?error=" + encodeURIComponent("Username and password are required"));
+        return res.redirect(302, "/api/cms?error=" + encodeURIComponent("Username and password are required"));
       }
       return res.status(400).json({
         success: false,
@@ -87,7 +87,7 @@ exports.login = async (req, res) => {
 
     if (!admin || !(await admin.comparePassword(password))) {
       if (isFormLogin(req)) {
-        return res.redirect(302, "/seo-cms/?error=" + encodeURIComponent("Invalid username or password"));
+        return res.redirect(302, "/api/cms?error=" + encodeURIComponent("Invalid username or password"));
       }
       return res.status(401).json({
         success: false,
@@ -99,7 +99,7 @@ exports.login = async (req, res) => {
     res.cookie(COOKIE_NAME, token, cookieOptions(req));
 
     if (isFormLogin(req)) {
-      return res.redirect(302, "/seo-cms/");
+      return res.redirect(302, "/seo-cms/?v=7");
     }
 
     res.json({
