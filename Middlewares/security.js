@@ -27,24 +27,22 @@ const buildAllowedOrigins = () => {
   return [...new Set([...DEFAULT_ORIGINS, ...fromEnv])];
 };
 
+const isAllowedOrigin = (origin) => {
+  if (!origin) return true;
+  if (buildAllowedOrigins().includes(origin)) return true;
+  try {
+    const { hostname, protocol } = new URL(origin);
+    if (protocol !== "http:" && protocol !== "https:") return false;
+    if (hostname === "localhost" || hostname === "127.0.0.1") return true;
+    return hostname === "florivagifts.com" || hostname.endsWith(".florivagifts.com");
+  } catch {
+    return false;
+  }
+};
+
 const corsMiddleware = cors({
   origin(origin, callback) {
-    const allowed = buildAllowedOrigins();
-    if (!origin || allowed.includes(origin)) {
-      callback(null, true);
-      return;
-    }
-    // Same-host API CMS (https://api.florivagifts.com/seo-cms/) must be able to POST /api
-    try {
-      const { hostname } = new URL(origin);
-      if (hostname === "api.florivagifts.com" || hostname === "localhost" || hostname === "127.0.0.1") {
-        callback(null, true);
-        return;
-      }
-    } catch {
-      // ignore invalid Origin
-    }
-    callback(new Error("Not allowed by CORS"));
+    callback(null, isAllowedOrigin(origin));
   },
   credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
@@ -90,4 +88,5 @@ module.exports = {
   authLimiter,
   otpLimiter,
   buildAllowedOrigins,
+  isAllowedOrigin,
 };

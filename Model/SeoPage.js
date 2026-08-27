@@ -12,6 +12,4 @@ const seoPageSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-seoPageSchema.index({ path: 1 });
-
 module.exports = mongoose.model('SeoPage', seoPageSchema);
