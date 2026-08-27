@@ -3,6 +3,11 @@ const Redirect = require('../Model/Redirect');
 const SeoSettings = require('../Model/SeoSettings');
 const { ensureUniqueSlug, normalizePath } = require('../Utils/slug');
 const { getOrCreateSettings } = require('../Utils/seoDefaults');
+const {
+  buildBlogImageHtml,
+  normalizeAlign,
+  normalizeSize,
+} = require('../Utils/blogImageHtml');
 
 const parseBool = (value, defaultValue) => {
   if (value === undefined || value === null || value === '') return defaultValue;
@@ -71,6 +76,9 @@ const applyPostFields = async (post, body, isCreate) => {
   if (body.content !== undefined) post.content = body.content;
   if (body.featuredImage !== undefined) post.featuredImage = body.featuredImage;
   if (body.featuredImageAlt !== undefined) post.featuredImageAlt = body.featuredImageAlt;
+  if (body.featuredImageAlign !== undefined) {
+    post.featuredImageAlign = normalizeAlign(body.featuredImageAlign);
+  }
   if (body.metaTitle !== undefined) post.metaTitle = body.metaTitle;
   if (body.metaDescription !== undefined) post.metaDescription = body.metaDescription;
   if (body.robotsIndex !== undefined) post.robotsIndex = parseBool(body.robotsIndex, true);
@@ -149,9 +157,20 @@ exports.uploadBlogImage = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Image file is required' });
     }
     const url = `/uploads/blog/${req.file.filename}`;
+    const alt = req.body?.alt || '';
+    const caption = req.body?.caption || '';
+    const align = normalizeAlign(req.body?.align);
+    const size = normalizeSize(req.body?.size);
     res.status(201).json({
       success: true,
-      data: { url, alt: req.body?.alt || '' },
+      data: {
+        url,
+        alt,
+        caption,
+        align,
+        size,
+        html: buildBlogImageHtml({ url, alt, caption, align, size }),
+      },
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

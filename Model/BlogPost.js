@@ -16,6 +16,11 @@ const blogPostSchema = new mongoose.Schema(
     content: { type: String, default: '' },
     featuredImage: { type: String, default: '' },
     featuredImageAlt: { type: String, default: '' },
+    featuredImageAlign: {
+      type: String,
+      enum: ['left', 'center', 'right', 'full', 'none'],
+      default: 'center',
+    },
     images: [blogImageSchema],
     metaTitle: { type: String, default: '' },
     metaDescription: { type: String, default: '' },
