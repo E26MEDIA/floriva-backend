@@ -84,10 +84,19 @@ app.use('/api', geoRoutes);
 app.use('/api', seoRoutes);
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/uploads', express.static('uploads'));
+
+const seoCmsDir = path.join(__dirname, 'public/seo-cms');
+const seoCmsIndex = path.join(seoCmsDir, 'index.html');
+app.use((req, res, next) => {
+  if (req.method !== 'GET' && req.method !== 'HEAD') return next();
+  const pathname = req.path.replace(/\/+$/, '') || '/';
+  if (pathname !== '/seo-cms') return next();
+  return res.sendFile(seoCmsIndex);
+});
 app.use(
   '/seo-cms',
-  express.static(path.join(__dirname, 'public/seo-cms'), {
-    index: 'index.html',
+  express.static(seoCmsDir, {
+    index: false,
     redirect: false,
   })
 );
