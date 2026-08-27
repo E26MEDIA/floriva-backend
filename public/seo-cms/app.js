@@ -23,6 +23,7 @@ async function api(path, options = {}) {
     headers['Content-Type'] = 'application/json';
     options.body = JSON.stringify(options.body);
   }
+  options.credentials = 'include';
   let res;
   try {
     const controller = new AbortController();
@@ -40,7 +41,6 @@ async function api(path, options = {}) {
     throw new Error(data.message || 'Too many login attempts. Restart floriva-backend on the server, wait a minute, then try once.');
   }
   if (res.status === 401) {
-    if (path !== '/admin/login') logout();
     throw new Error(data.message || 'Invalid username or password');
   }
   if (!res.ok || data.success === false) {
@@ -58,51 +58,18 @@ function showApp() {
 function logout() {
   token = '';
   localStorage.removeItem(TOKEN_KEY);
-  loginView.hidden = false;
-  appView.hidden = true;
+  window.location.href = '/api/admin/logout';
 }
 
-const loginForm = qs('#login-form');
-const loginButton = qs('#login-submit');
-
-async function handleLogin(event) {
-  event.preventDefault();
-  const err = qs('#login-error');
-  if (err) err.textContent = '';
-  if (loginButton) {
-    loginButton.disabled = true;
-    loginButton.textContent = 'Signing in…';
-  }
-  try {
-    const data = await api('/admin/login', {
-      method: 'POST',
-      body: {
-        username: qs('#username')?.value || '',
-        password: qs('#password')?.value || '',
-      },
-    });
-    token = data.token;
-    localStorage.setItem(TOKEN_KEY, token);
-    showApp();
-  } catch (error) {
-    if (err) err.textContent = error.message;
-  } finally {
-    if (loginButton) {
-      loginButton.disabled = false;
-      loginButton.textContent = 'Sign in';
-    }
-  }
+const params = new URLSearchParams(window.location.search);
+const loginError = qs('#login-error');
+if (loginError && params.get('error')) {
+  loginError.textContent = params.get('error');
 }
 
-if (loginForm) {
-  loginForm.addEventListener('submit', handleLogin);
-}
-if (loginButton) {
-  loginButton.addEventListener('click', (event) => {
-    if (event.target.form) return;
-    handleLogin(event);
-  });
-}
+api('/admin/me')
+  .then(() => showApp())
+  .catch(() => {});
 
 qs('#logout').addEventListener('click', logout);
 
@@ -483,4 +450,3 @@ async function renderGoogle() {
   });
 }
 
-if (token) showApp();

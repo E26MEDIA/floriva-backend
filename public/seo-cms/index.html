@@ -9,10 +9,10 @@
 </head>
 <body>
   <div id="login-view" class="auth">
-    <form id="login-form" class="card auth-card" action="javascript:void(0)" method="post">
+    <form id="login-form" class="card auth-card" action="/api/admin/login" method="post" accept-charset="UTF-8">
       <p class="eyebrow">Floriva Gifts</p>
       <h1>SEO &amp; Blog CMS</h1>
-      <p class="muted">Sign in with your admin account to edit meta tags, blogs, redirects, and Google tags without changing website code.</p>
+      <p class="muted">Sign in with the same username and password you use at admin.florivagifts.com.</p>
       <label>Username <input name="username" id="username" autocomplete="username" required /></label>
       <label>Password <input name="password" id="password" type="password" autocomplete="current-password" required /></label>
       <button type="submit" id="login-submit">Sign in</button>
@@ -39,6 +39,6 @@
     <p id="flash" class="flash" hidden></p>
     <main id="panel"></main>
   </div>
-  <script src="/seo-cms/app.js?v=5"></script>
+  <script src="/seo-cms/app.js?v=6"></script>
 </body>
 </html>
