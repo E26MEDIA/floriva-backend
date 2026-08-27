@@ -99,11 +99,26 @@ const page = (title, name, active, inner, extraHead = '') =>
     extraHead
   );
 
+const CMS_VERSION = 'blog-images-v2';
+
 const alignOptions = (selected = 'center') =>
   ['left', 'center', 'right', 'full']
     .map(
       (value) =>
         `<option value="${value}" ${selected === value ? 'selected' : ''}>${value[0].toUpperCase()}${value.slice(1)}</option>`
+    )
+    .join('');
+
+const placementRadios = (name, selected = 'center') =>
+  [
+    ['left', 'Left — text wraps on the right'],
+    ['center', 'Center'],
+    ['right', 'Right — text wraps on the left'],
+    ['full', 'Full width'],
+  ]
+    .map(
+      ([value, label]) =>
+        `<label><input type="radio" name="${name}" value="${value}" ${selected === value ? 'checked' : ''}> ${label}</label>`
     )
     .join('');
 
@@ -113,7 +128,7 @@ const blogToolbar = () => `
     <button type="button" data-h="h2">H2</button>
     <button type="button" data-h="h3">H3</button>
     <button type="button" data-link="1">Internal link</button>
-    <button type="button" data-img="1">Insert image + placement</button>
+    <button type="button" data-img="1">Insert another image</button>
   </div>
 `;
 
@@ -123,18 +138,38 @@ const blogEditorFields = (post = {}) => {
     : '';
   return `
     <label>Title <input name="title" value="${esc(post.title || '')}" required></label>
+    <fieldset class="placement">
+      <legend>Images</legend>
+      <p class="help">Upload the photo here, then choose where it sits in the article.</p>
+      <label>${post._id ? 'Replace featured image' : 'Featured image (top of post)'} <input type="file" name="image" accept="image/*"></label>
+      ${featured}
+      <label>Featured image ALT <input name="featuredImageAlt" value="${esc(post.featuredImageAlt || '')}"></label>
+      <label>Featured image placement
+        <select name="featuredImageAlign">${alignOptions(post.featuredImageAlign || 'center')}</select>
+      </label>
+      <hr style="border:0;border-top:1px solid var(--line);margin:16px 0" />
+      <label>Image inside the article <input type="file" name="contentImage" accept="image/*"></label>
+      <div class="placement" style="margin:8px 0">
+        <legend>Article image placement</legend>
+        ${placementRadios('contentAlign', 'center')}
+      </div>
+      <label>Article image size
+        <select name="contentSize">
+          <option value="small">Small</option>
+          <option value="medium">Medium</option>
+          <option value="large" selected>Large</option>
+          <option value="full">Full</option>
+        </select>
+      </label>
+      <label>Article image ALT <input name="contentAlt" placeholder="Describe the image"></label>
+      <label>Caption <input name="contentCaption" placeholder="Optional"></label>
+    </fieldset>
     <label>URL slug <input name="slug" value="${esc(post.slug || '')}" placeholder="optional"></label>
     <label>Meta title <input name="metaTitle" value="${esc(post.metaTitle || '')}"></label>
     <label>Meta description <textarea name="metaDescription">${esc(post.metaDescription || '')}</textarea></label>
-    <label>${post._id ? 'Replace featured image' : 'Featured image'} <input type="file" name="image" accept="image/*"></label>
-    ${featured}
-    <label>Featured image ALT <input name="featuredImageAlt" value="${esc(post.featuredImageAlt || '')}"></label>
-    <label>Featured image placement
-      <select name="featuredImageAlign">${alignOptions(post.featuredImageAlign || 'center')}</select>
-    </label>
     ${blogToolbar()}
     <label>Content
-      <textarea name="content" placeholder="<h1>Title</h1><p>Write here, then insert an image.</p>">${esc(post.content || '')}</textarea>
+      <textarea name="content" placeholder="<h1>Title</h1><p>Write here. Uploaded article images are added automatically.</p>">${esc(post.content || '')}</textarea>
     </label>
     <div>
       <p class="help">Live placement preview</p>
@@ -152,6 +187,24 @@ const blogEditorFields = (post = {}) => {
 
 const applyUploadedImage = (post, file) => {
   if (file) post.featuredImage = `/uploads/blog/${file.filename}`;
+};
+
+const uploadedFile = (req, field) => {
+  if (req.file && (!field || req.file.fieldname === field)) return req.file;
+  const files = req.files && req.files[field];
+  return Array.isArray(files) ? files[0] : null;
+};
+
+const appendContentImage = (post, file, body) => {
+  if (!file) return;
+  const html = buildBlogImageHtml({
+    url: `/uploads/blog/${file.filename}`,
+    alt: body.contentAlt || '',
+    caption: body.contentCaption || '',
+    align: body.contentAlign || 'center',
+    size: body.contentSize || 'large',
+  });
+  post.content = `${post.content || ''}\n${html}\n`;
 };
 
 const applyBlogFields = async (post, body) => {
@@ -191,6 +244,7 @@ exports.loginPage = (req, res) => {
           <label>Password <input name="password" type="password" autocomplete="current-password" required></label>
           <button type="submit">Sign in</button>
         </form>
+        <p class="help">CMS ${CMS_VERSION} — blog images and placement</p>
       </div>`
     )
   );
@@ -303,7 +357,13 @@ exports.updatePage = async (req, res) => {
   res.redirect('/api/cms/pages?ok=1');
 };
 
+exports.version = (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  res.json({ success: true, cmsVersion: CMS_VERSION });
+};
+
 exports.blog = async (req, res) => {
+  res.set('Cache-Control', 'no-store');
   const posts = await BlogPost.find().sort({ updatedAt: -1 });
   const rows = posts
     .map(
@@ -323,7 +383,7 @@ exports.blog = async (req, res) => {
       `<h1>Blog</h1>
       ${req.query.ok ? '<p class="ok">Saved.</p>' : ''}
       ${req.query.error ? `<p class="error">${esc(req.query.error)}</p>` : ''}
-      <p class="help">Create a post, then use <strong>Insert image + placement</strong> to put a photo left, center, right, or full width — same idea as WordPress.</p>
+      <p class="help"><strong>Upload photos on this form</strong> and choose placement (left / center / right / full width). This is CMS ${CMS_VERSION}.</p>
       <form class="card editor" method="post" action="/api/cms/blog" enctype="multipart/form-data">
         <h3>New post</h3>
         ${blogEditorFields()}
@@ -337,8 +397,9 @@ exports.blog = async (req, res) => {
 
 exports.createPost = async (req, res) => {
   const post = new BlogPost({ title: req.body.title || 'Untitled' });
-  applyUploadedImage(post, req.file);
+  applyUploadedImage(post, uploadedFile(req, 'image'));
   await applyBlogFields(post, req.body);
+  appendContentImage(post, uploadedFile(req, 'contentImage'), req.body);
   await post.save();
   res.redirect('/api/cms/blog?ok=1');
 };
@@ -346,8 +407,9 @@ exports.createPost = async (req, res) => {
 exports.updatePost = async (req, res) => {
   const post = await BlogPost.findById(req.params.id);
   if (!post) return res.redirect('/api/cms/blog');
-  applyUploadedImage(post, req.file);
+  applyUploadedImage(post, uploadedFile(req, 'image'));
   await applyBlogFields(post, req.body);
+  appendContentImage(post, uploadedFile(req, 'contentImage'), req.body);
   await post.save();
   res.redirect('/api/cms/blog?ok=1');
 };

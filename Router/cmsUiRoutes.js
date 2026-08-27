@@ -1,7 +1,7 @@
 const express = require('express');
 const multer = require('multer');
 const cmsSession = require('../Middlewares/cmsSession');
-const { blogUpload } = require('../Middlewares/multer');
+const { blogUpload, blogFieldsUpload } = require('../Middlewares/multer');
 const cms = require('../Controllers/cmsUiController');
 
 const router = express.Router();
@@ -24,8 +24,8 @@ const wrap = (handler) => async (req, res, next) => {
   }
 };
 
-const handleBlogUpload = (req, res, next) => {
-  blogUpload(req, res, (err) => {
+const handleUpload = (uploader) => (req, res, next) => {
+  uploader(req, res, (err) => {
     if (err instanceof multer.MulterError) {
       const message =
         err.code === 'LIMIT_FILE_SIZE' ? 'Image too large. Maximum size is 5 MB.' : err.message;
@@ -47,6 +47,7 @@ const handleBlogUpload = (req, res, next) => {
 router.get('/', wrap(cms.loginPage));
 router.post('/login', wrap(cms.login));
 router.get('/logout', wrap(cms.logout));
+router.get('/version', cms.version);
 
 router.use(cms.requireCms);
 router.get('/home', wrap(cms.home));
@@ -54,15 +55,15 @@ router.get('/pages', wrap(cms.pages));
 router.post('/pages', wrap(cms.createPage));
 router.post('/pages/:id', wrap(cms.updatePage));
 router.get('/blog', wrap(cms.blog));
-router.post('/blog/images', handleBlogUpload, async (req, res) => {
+router.post('/blog/images', handleUpload(blogUpload), async (req, res) => {
   try {
     await cms.uploadImage(req, res);
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
-router.post('/blog', handleBlogUpload, wrap(cms.createPost));
-router.post('/blog/:id', handleBlogUpload, wrap(cms.updatePost));
+router.post('/blog', handleUpload(blogFieldsUpload), wrap(cms.createPost));
+router.post('/blog/:id', handleUpload(blogFieldsUpload), wrap(cms.updatePost));
 router.get('/products', wrap(cms.products));
 router.post('/products/:id', wrap(cms.updateProduct));
 router.get('/redirects', wrap(cms.redirects));

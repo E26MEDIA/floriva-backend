@@ -74,4 +74,8 @@ module.exports = {
 
   siteContentUpload: siteContentUploader.single('image'),
   blogUpload: blogUploader.single('image'),
+  blogFieldsUpload: blogUploader.fields([
+    { name: 'image', maxCount: 1 },
+    { name: 'contentImage', maxCount: 1 },
+  ]),
 };
