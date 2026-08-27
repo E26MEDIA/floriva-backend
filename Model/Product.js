@@ -66,10 +66,35 @@ const productSchema = new  Schema({
     images: [{
       type: String,
       default: []
-    }]
+    }],
+    imageAlts: [{
+      type: String,
+      default: ''
+    }],
+    slug: {
+      type: String,
+      trim: true,
+      lowercase: true,
+    },
+    metaTitle: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+    metaDescription: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+    robotsIndex: {
+      type: Boolean,
+      default: true,
+    },
   },
   { timestamps: true }
 );
+
+productSchema.index({ slug: 1 }, { unique: true, sparse: true });
 
 productSchema.pre('save', function () {
   if (Array.isArray(this.categories) && this.categories.length > 0) {

@@ -1,4 +1,5 @@
 const Category = require('../Model/Category');
+const { ensureUniqueSlug } = require('../Utils/slug');
 
 // =============================
 // Create Category
@@ -26,7 +27,11 @@ const createCategory = async (req, res) => {
       name: name.trim(),
       subCategories: Array.isArray(subCategories) ? subCategories : [],
       categoriesimg,
+      metaTitle: req.body.metaTitle || '',
+      metaDescription: req.body.metaDescription || '',
+      robotsIndex: req.body.robotsIndex !== 'false' && req.body.robotsIndex !== false,
     });
+    category.slug = await ensureUniqueSlug(Category, req.body.slug || category.name, category._id);
 
     await category.save();
     res.status(201).json({ success: true, message: 'Category created successfully', category });
@@ -86,6 +91,18 @@ const updateCategory = async (req, res) => {
     if (name)                         category.name          = name.trim();
     if (Array.isArray(subCategories)) category.subCategories = subCategories;
     if (req.file)                     category.categoriesimg = req.file.path.replace(/\\/g, '/');
+    if (req.body.metaTitle !== undefined) category.metaTitle = req.body.metaTitle;
+    if (req.body.metaDescription !== undefined) category.metaDescription = req.body.metaDescription;
+    if (req.body.robotsIndex !== undefined) {
+      category.robotsIndex = req.body.robotsIndex !== 'false' && req.body.robotsIndex !== false;
+    }
+    if (req.body.slug !== undefined || !category.slug) {
+      category.slug = await ensureUniqueSlug(
+        Category,
+        req.body.slug || category.name,
+        category._id
+      );
+    }
 
     await category.save();
     res.status(200).json({ success: true, message: 'Category updated successfully', category });

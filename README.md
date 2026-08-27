@@ -29,11 +29,17 @@ Or manually:
 ```bash
 git pull origin main
 npm ci --omit=dev
-mkdir -p uploads/products uploads/categories uploads/site-content
+mkdir -p uploads/products uploads/categories uploads/site-content uploads/blog
 pm2 restart all
 ```
 
-Full guide: [docs/DEPLOY.md](docs/DEPLOY.md)
+## SEO & blog CMS
+
+Admins can edit page meta tags, publish blogs, manage product SEO, 301 redirects, sitemap/robots, and Google tag IDs without changing website code.
+
+- **CMS:** `/seo-cms/` (same admin login as the main panel)
+- **Guide:** [docs/SEO.md](docs/SEO.md)
+
 
 ## Repos
 

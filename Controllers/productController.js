@@ -1,6 +1,43 @@
 const Product = require('../Model/Product');
 const Country = require('../Model/country');
 const FeaturedProduct = require('../Model/FeaturedProduct');
+const Redirect = require('../Model/Redirect');
+const SeoSettings = require('../Model/SeoSettings');
+const { ensureUniqueSlug, normalizePath } = require('../Utils/slug');
+const { getOrCreateSettings } = require('../Utils/seoDefaults');
+
+const isObjectId = (value) => /^[a-fA-F0-9]{24}$/.test(String(value || ''));
+
+const parseImageAlts = (body) => {
+  if (!body || body.imageAlts === undefined) return undefined;
+  const raw = body.imageAlts;
+  if (Array.isArray(raw)) return raw.map((alt) => String(alt || ''));
+  if (typeof raw === 'string' && raw.trim()) {
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed.map((alt) => String(alt || ''));
+    } catch {
+      return raw.split(',').map((alt) => alt.trim());
+    }
+  }
+  return [];
+};
+
+const applyProductSeoFields = async (product, body) => {
+  if (body.metaTitle !== undefined) product.metaTitle = body.metaTitle;
+  if (body.metaDescription !== undefined) product.metaDescription = body.metaDescription;
+  if (body.robotsIndex !== undefined) {
+    const value = body.robotsIndex;
+    product.robotsIndex = value !== 'false' && value !== false && value !== '0';
+  }
+  const alts = parseImageAlts(body);
+  if (alts) product.imageAlts = alts;
+
+  if (body.slug !== undefined || !product.slug) {
+    const source = body.slug || product.name || product.title || 'product';
+    product.slug = await ensureUniqueSlug(Product, source, product._id);
+  }
+};
 
 // ─── Helper: parse FeaturedProduct IDs from multipart body ───────────────────
 function parseFeaturedIds(body) {
@@ -179,6 +216,7 @@ const createProduct = async (req, res) => {
       });
     }
 
+    const imageAlts = parseImageAlts(req.body) || [];
     const productData = {
       name:            name.trim(),
       title:           title.trim(),
@@ -190,7 +228,11 @@ const createProduct = async (req, res) => {
       stock:           numericStock,
       deliveryInfo:    deliveryInfo.trim(),
       images,
+      imageAlts,
       FeaturedProduct: featuredProductIds,
+      metaTitle:       req.body.metaTitle || '',
+      metaDescription: req.body.metaDescription || '',
+      robotsIndex:     req.body.robotsIndex !== 'false' && req.body.robotsIndex !== false,
     };
 
     if (subCategoryIds.length > 0) {
@@ -208,6 +250,11 @@ const createProduct = async (req, res) => {
     }
 
     const product   = new Product(productData);
+    product.slug = await ensureUniqueSlug(
+      Product,
+      req.body.slug || product.name || product.title,
+      product._id
+    );
     await product.save();
 
     const populated = await Product.findById(product._id)
@@ -407,8 +454,9 @@ const productsByFeaturedLabel = async (req, res) => {
 const singleProductView = async (req, res) => {
   try {
     const { id } = req.params;
+    const query = isObjectId(id) ? { _id: id } : { slug: String(id).toLowerCase() };
 
-    const product = await Product.findById(id)
+    const product = await Product.findOne(query)
       .populate('category')
       .populate('categories')
       .populate('subCategory')
@@ -447,10 +495,12 @@ const productUpdate = async (req, res) => {
     }
 
     // 1️⃣ Scalar fields
+    const previousSlug = product.slug;
     ['name', 'title', 'description', 'exactPrice', 'discountPrice', 'stock', 'deliveryInfo']
       .forEach(field => {
         if (req.body[field] !== undefined) product[field] = req.body[field];
       });
+    await applyProductSeoFields(product, req.body);
 
     // Categories (multi-select; keeps legacy single category field working)
     const { ids: categoryIds, wasProvided: categoriesProvided } = parseCategoryIds(req.body);
@@ -497,6 +547,17 @@ const productUpdate = async (req, res) => {
     product.images = finalImages;
     await product.save();
 
+    if (previousSlug && product.slug && previousSlug !== product.slug) {
+      const settings = await getOrCreateSettings(SeoSettings);
+      const fromPath = normalizePath(`${settings.productPathPrefix}/${previousSlug}`);
+      const toPath = normalizePath(`${settings.productPathPrefix}/${product.slug}`);
+      await Redirect.findOneAndUpdate(
+        { fromPath },
+        { fromPath, toPath, statusCode: 301, isActive: true, note: `Product URL changed: ${product.name}` },
+        { upsert: true, new: true }
+      );
+    }
+
     const populated = await Product.findById(product._id)
       .populate('category')
       .populate('categories')
@@ -527,4 +588,46 @@ const productDelete = async (req, res) => {
   }
 };
 
-module.exports = { createProduct, productView, singleProductView, productUpdate, productDelete,particularView,countryWiseProducts, productsByFeaturedLabel };
+const updateProductSeo = async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id);
+    if (!product) {
+      return res.status(404).json({ success: false, message: 'Product not found' });
+    }
+
+    const previousSlug = product.slug;
+    if (req.body.title !== undefined) product.title = req.body.title;
+    if (req.body.name !== undefined) product.name = req.body.name;
+    if (req.body.description !== undefined) product.description = req.body.description;
+    await applyProductSeoFields(product, req.body);
+    await product.save();
+
+    if (previousSlug && product.slug && previousSlug !== product.slug) {
+      const settings = await getOrCreateSettings(SeoSettings);
+      const fromPath = normalizePath(`${settings.productPathPrefix}/${previousSlug}`);
+      const toPath = normalizePath(`${settings.productPathPrefix}/${product.slug}`);
+      await Redirect.findOneAndUpdate(
+        { fromPath },
+        { fromPath, toPath, statusCode: 301, isActive: true, note: `Product URL changed: ${product.name}` },
+        { upsert: true, new: true }
+      );
+    }
+
+    return res.json({ success: true, message: 'Product SEO saved', product });
+  } catch (err) {
+    console.error('Product SEO update failed:', err);
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+module.exports = {
+  createProduct,
+  productView,
+  singleProductView,
+  productUpdate,
+  productDelete,
+  particularView,
+  countryWiseProducts,
+  productsByFeaturedLabel,
+  updateProductSeo,
+};
