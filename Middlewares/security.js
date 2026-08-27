@@ -6,19 +6,22 @@ const DEFAULT_ORIGINS = [
   "https://florivagifts.com",
   "https://www.florivagifts.com",
   "https://admin.florivagifts.com",
+  "https://api.florivagifts.com",
   "http://localhost:3000",
   "http://localhost:5173",
+  "http://localhost:7000",
 ];
 
 const buildAllowedOrigins = () => {
   const fromEnv = [
     process.env.FRONTEND_URL,
     process.env.ADMIN_URL,
+    process.env.API_URL,
     process.env.CORS_ORIGINS,
   ]
     .filter(Boolean)
     .flatMap((value) => String(value).split(","))
-    .map((value) => value.trim())
+    .map((value) => value.trim().replace(/\/+$/, ""))
     .filter(Boolean);
 
   return [...new Set([...DEFAULT_ORIGINS, ...fromEnv])];
@@ -30,6 +33,16 @@ const corsMiddleware = cors({
     if (!origin || allowed.includes(origin)) {
       callback(null, true);
       return;
+    }
+    // Same-host API CMS (https://api.florivagifts.com/seo-cms/) must be able to POST /api
+    try {
+      const { hostname } = new URL(origin);
+      if (hostname === "api.florivagifts.com" || hostname === "localhost" || hostname === "127.0.0.1") {
+        callback(null, true);
+        return;
+      }
+    } catch {
+      // ignore invalid Origin
     }
     callback(new Error("Not allowed by CORS"));
   },
@@ -72,4 +85,5 @@ module.exports = {
   apiLimiter,
   authLimiter,
   otpLimiter,
+  buildAllowedOrigins,
 };

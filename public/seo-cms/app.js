@@ -23,11 +23,16 @@ async function api(path, options = {}) {
     headers['Content-Type'] = 'application/json';
     options.body = JSON.stringify(options.body);
   }
-  const res = await fetch(`${apiBase}${path}`, { ...options, headers });
+  let res;
+  try {
+    res = await fetch(`${apiBase}${path}`, { ...options, headers });
+  } catch {
+    throw new Error('Cannot reach the API. Check that you opened https://api.florivagifts.com/seo-cms/');
+  }
   const data = await res.json().catch(() => ({}));
   if (res.status === 401) {
-    logout();
-    throw new Error(data.message || 'Please sign in again');
+    if (path !== '/admin/login') logout();
+    throw new Error(data.message || 'Invalid username or password');
   }
   if (!res.ok || data.success === false) {
     throw new Error(data.message || 'Request failed');

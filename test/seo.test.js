@@ -42,6 +42,13 @@ test('robots.txt includes sitemap and disallow rules', () => {
   assert.match(txt, /Sitemap: https:\/\/www.florivagifts.com\/sitemap.xml/);
 });
 
+test('CORS allowlist includes the API host used by SEO CMS', () => {
+  const { buildAllowedOrigins } = require('../Middlewares/security');
+  const allowed = buildAllowedOrigins();
+  assert.equal(allowed.includes('https://api.florivagifts.com'), true);
+  assert.equal(allowed.includes('https://admin.florivagifts.com'), true);
+});
+
 test('ensureUniqueSlug increments when taken', async () => {
   const taken = new Set(['roses', 'roses-2']);
   const Model = {
