@@ -25,9 +25,15 @@ async function api(path, options = {}) {
   }
   let res;
   try {
-    res = await fetch(`${apiBase}${path}`, { ...options, headers });
-  } catch {
-    throw new Error('Cannot reach the API. Check that you opened https://api.florivagifts.com/seo-cms/');
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 20000);
+    res = await fetch(`${apiBase}${path}`, { ...options, headers, signal: controller.signal });
+    clearTimeout(timer);
+  } catch (error) {
+    if (error && error.name === 'AbortError') {
+      throw new Error('Sign in timed out. Restart floriva-backend on the server and try again.');
+    }
+    throw new Error('Cannot reach the API. Open https://api.florivagifts.com/seo-cms/ and check floriva-backend is online.');
   }
   const data = await res.json().catch(() => ({}));
   if (res.status === 401) {
@@ -53,15 +59,24 @@ function logout() {
   appView.hidden = true;
 }
 
-qs('#login-form').addEventListener('submit', async (event) => {
+const loginForm = qs('#login-form');
+const loginButton = qs('#login-submit');
+
+async function handleLogin(event) {
   event.preventDefault();
   const err = qs('#login-error');
   err.hidden = true;
-  const form = new FormData(event.target);
+  if (loginButton) {
+    loginButton.disabled = true;
+    loginButton.textContent = 'Signing in…';
+  }
   try {
     const data = await api('/admin/login', {
       method: 'POST',
-      body: { username: form.get('username'), password: form.get('password') },
+      body: {
+        username: qs('#username')?.value || '',
+        password: qs('#password')?.value || '',
+      },
     });
     token = data.token;
     localStorage.setItem(TOKEN_KEY, token);
@@ -69,8 +84,23 @@ qs('#login-form').addEventListener('submit', async (event) => {
   } catch (error) {
     err.hidden = false;
     err.textContent = error.message;
+  } finally {
+    if (loginButton) {
+      loginButton.disabled = false;
+      loginButton.textContent = 'Sign in';
+    }
   }
-});
+}
+
+if (loginForm) {
+  loginForm.addEventListener('submit', handleLogin);
+}
+if (loginButton) {
+  loginButton.addEventListener('click', (event) => {
+    if (event.target.form) return;
+    handleLogin(event);
+  });
+}
 
 qs('#logout').addEventListener('click', logout);
 

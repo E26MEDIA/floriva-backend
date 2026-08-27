@@ -42,6 +42,12 @@ test('robots.txt includes sitemap and disallow rules', () => {
   assert.match(txt, /Sitemap: https:\/\/www.florivagifts.com\/sitemap.xml/);
 });
 
+test('SEO CMS HTML loads scripts from an absolute /seo-cms path', () => {
+  const html = require('fs').readFileSync(require('path').join(__dirname, '../public/seo-cms/index.html'), 'utf8');
+  assert.match(html, /src="\/seo-cms\/app\.js"/);
+  assert.match(html, /href="\/seo-cms\/styles\.css"/);
+});
+
 test('CORS allowlist includes the API host used by SEO CMS', () => {
   const { buildAllowedOrigins } = require('../Middlewares/security');
   const allowed = buildAllowedOrigins();

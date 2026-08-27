@@ -77,6 +77,9 @@ const otpLimiter = rateLimit({
 
 const helmetMiddleware = helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" },
+  // The SEO CMS is a small HTML/JS app on this API host. Helmet's default CSP
+  // blocks it from loading /seo-cms/app.js, so the Sign in button does nothing.
+  contentSecurityPolicy: false,
 });
 
 module.exports = {
