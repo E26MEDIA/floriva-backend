@@ -5,8 +5,15 @@ const loginView = document.getElementById('login-view');
 const appView = document.getElementById('app-view');
 const panel = document.getElementById('panel');
 const flashEl = document.getElementById('flash');
-let currentTab = 'pages';
-let token = localStorage.getItem(TOKEN_KEY) || '';
+function readJsToken() {
+  const fromStore = localStorage.getItem(TOKEN_KEY) || '';
+  const match = document.cookie.match(/(?:^|; )floriva_seo_js_token=([^;]*)/);
+  const fromCookie = match ? decodeURIComponent(match[1]) : '';
+  return fromStore || fromCookie;
+}
+
+let token = readJsToken();
+if (token) localStorage.setItem(TOKEN_KEY, token);
 
 const qs = (sel, root = document) => root.querySelector(sel);
 
@@ -67,9 +74,13 @@ if (loginError && params.get('error')) {
   loginError.textContent = params.get('error');
 }
 
-api('/admin/me')
-  .then(() => showApp())
-  .catch(() => {});
+if (token) {
+  showApp();
+} else {
+  api('/admin/me')
+    .then(() => showApp())
+    .catch(() => {});
+}
 
 qs('#logout').addEventListener('click', logout);
 

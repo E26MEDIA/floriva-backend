@@ -88,33 +88,25 @@ exports.login = async (req, res) => {
     }
 
     const token = generateAdminToken(admin);
+    const host = String(req.headers.host || "");
+    const cookieBase = {
+      secure:
+        host.includes("florivagifts.com") ||
+        req.secure ||
+        req.headers["x-forwarded-proto"] === "https",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    };
     try {
-      res.cookie("floriva_admin_token", token, {
-        httpOnly: true,
-        secure: req.secure || req.headers["x-forwarded-proto"] === "https",
-        sameSite: "lax",
-        path: "/",
-        maxAge: 7 * 24 * 60 * 60 * 1000,
-      });
+      res.cookie("floriva_admin_token", token, { ...cookieBase, httpOnly: true });
+      res.cookie("floriva_seo_js_token", token, { ...cookieBase, httpOnly: false });
     } catch (cookieError) {
       console.error("Admin cookie not set:", cookieError);
     }
 
     if (isFormLogin(req)) {
-      res.set("Content-Type", "text/html; charset=utf-8");
-      res.set("Cache-Control", "no-store");
-      return res.status(200).send(`<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><title>Signed in</title></head>
-<body style="font-family:Arial,sans-serif;background:#f7f3ee;padding:40px">
-  <p>Signed in. Opening SEO CMS…</p>
-  <p><a href="/seo-cms/?v=7">Continue</a></p>
-  <script>
-    localStorage.setItem("floriva_seo_cms_token", ${JSON.stringify(token)});
-    window.location.replace("/seo-cms/?v=7");
-  </script>
-</body>
-</html>`);
+      return res.redirect(302, "/seo-cms/?v=8");
     }
 
     res.json({
