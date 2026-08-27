@@ -7,6 +7,13 @@ const Category = require('../Model/Category');
 const { normalizePath, slugify, ensureUniqueSlug } = require('../Utils/slug');
 const { buildSitemapXml, buildRobotsTxt, joinUrl } = require('../Utils/seoXml');
 const { DEFAULT_PAGES, getOrCreateSettings } = require('../Utils/seoDefaults');
+const path = require('path');
+
+exports.getCmsSignin = (req, res) => {
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+  res.set('Pragma', 'no-cache');
+  res.sendFile(path.join(__dirname, '../public/seo-cms/signin.html'));
+};
 
 const parseBool = (value, defaultValue) => {
   if (value === undefined || value === null || value === '') return defaultValue;
@@ -29,14 +36,22 @@ exports.seedSeo = async () => {
 
   const products = await Product.find({ $or: [{ slug: { $exists: false } }, { slug: '' }, { slug: null }] }).select('name title');
   for (const product of products) {
-    product.slug = await ensureUniqueSlug(Product, product.name || product.title, product._id);
-    await product.save();
+    try {
+      product.slug = await ensureUniqueSlug(Product, product.name || product.title, product._id);
+      await product.save();
+    } catch (error) {
+      console.error('SEO slug seed skipped for product', product._id, error.message);
+    }
   }
 
   const categories = await Category.find({ $or: [{ slug: { $exists: false } }, { slug: '' }, { slug: null }] }).select('name');
   for (const category of categories) {
-    category.slug = await ensureUniqueSlug(Category, category.name, category._id);
-    await category.save();
+    try {
+      category.slug = await ensureUniqueSlug(Category, category.name, category._id);
+      await category.save();
+    } catch (error) {
+      console.error('SEO slug seed skipped for category', category._id, error.message);
+    }
   }
 };
 
@@ -55,6 +70,7 @@ exports.getPublicConfig = async (req, res) => {
         notFoundTitle: settings.notFoundTitle,
         notFoundBody: settings.notFoundBody,
         google: publicGoogle(settings),
+        cmsVersion: 'login-v9',
       },
     });
   } catch (error) {

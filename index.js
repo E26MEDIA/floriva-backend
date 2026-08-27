@@ -22,6 +22,7 @@ const siteContentRoutes = require("./Router/siteContentRoutes");
 const settingsRoutes = require("./Router/settingsRoutes");
 const geoRoutes = require("./Router/geoRoutes");
 const seoRoutes = require("./Router/seoRoutes");
+const cmsUiRoutes = require("./Router/cmsUiRoutes");
 const { seedDefaultAdmin } = require("./Controllers/adminController");
 const { seedSiteContent } = require("./Controllers/siteContentController");
 const { seedAdminSettings } = require("./Controllers/settingsController");
@@ -81,13 +82,28 @@ app.use('/api', adminRoutes);
 app.use('/api', siteContentRoutes);
 app.use('/api', settingsRoutes);
 app.use('/api', geoRoutes);
+app.use('/api/cms', cmsUiRoutes);
 app.use('/api', seoRoutes);
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/uploads', express.static('uploads'));
-app.use('/seo-cms', express.static(path.join(__dirname, 'public/seo-cms')));
-app.get('/seo-cms', (req, res) => {
-  res.redirect(301, '/seo-cms/');
+
+const seoCmsDir = path.join(__dirname, 'public/seo-cms');
+const seoCmsIndex = path.join(seoCmsDir, 'index.html');
+app.use((req, res, next) => {
+  if (req.method !== 'GET' && req.method !== 'HEAD') return next();
+  const pathname = req.path.replace(/\/+$/, '') || '/';
+  if (pathname !== '/seo-cms' && pathname !== '/api/seo-cms') return next();
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+  res.set('Pragma', 'no-cache');
+  return res.sendFile(seoCmsIndex);
 });
+app.use(
+  '/seo-cms',
+  express.static(seoCmsDir, {
+    index: false,
+    redirect: false,
+  })
+);
 app.get('/sitemap.xml', getSitemap);
 app.get('/robots.txt', getRobots);
 app.get('/:filename', getSearchConsoleFile);
@@ -110,12 +126,18 @@ app.use((err, req, res, _next) => {
   res.status(status).json({ success: false, message });
 });
 
+app.listen(port, '0.0.0.0', () => {
+  console.log(`Server running on port ${port}`);
+});
+
 mongoDB().then(async () => {
-  await seedDefaultAdmin();
-  await seedSiteContent();
-  await seedAdminSettings();
-  await seedSeo();
-  app.listen(port, () => {
-    console.log(`Server running on port ${port}`);
-  });
+  try {
+    await seedDefaultAdmin();
+    await seedSiteContent();
+    await seedAdminSettings();
+    await seedSeo();
+    console.log('SEO/admin seeds complete');
+  } catch (error) {
+    console.error('Startup seed failed (API still running):', error);
+  }
 });

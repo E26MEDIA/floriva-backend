@@ -42,6 +42,27 @@ test('robots.txt includes sitemap and disallow rules', () => {
   assert.match(txt, /Sitemap: https:\/\/www.florivagifts.com\/sitemap.xml/);
 });
 
+test('SEO CMS HTML loads scripts from an absolute /seo-cms path', () => {
+  const html = require('fs').readFileSync(require('path').join(__dirname, '../public/seo-cms/index.html'), 'utf8');
+  assert.match(html, /action="\/api\/admin\/login"/);
+  assert.match(html, /src="\/seo-cms\/app\.js\?v=8"/);
+  assert.match(html, /href="\/seo-cms\/styles\.css"/);
+});
+
+test('CORS allows Floriva hosts and does not throw on unknown origins', () => {
+  const { isAllowedOrigin } = require('../Middlewares/security');
+  assert.equal(isAllowedOrigin('https://api.florivagifts.com'), true);
+  assert.equal(isAllowedOrigin('https://www.florivagifts.com'), true);
+  assert.equal(isAllowedOrigin('https://evil.example'), false);
+});
+
+test('CMS UI controller exports login handlers', () => {
+  const cms = require('../Controllers/cmsUiController');
+  assert.equal(typeof cms.loginPage, 'function');
+  assert.equal(typeof cms.login, 'function');
+  assert.equal(typeof cms.home, 'function');
+});
+
 test('ensureUniqueSlug increments when taken', async () => {
   const taken = new Set(['roses', 'roses-2']);
   const Model = {

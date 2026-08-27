@@ -5,8 +5,15 @@ const loginView = document.getElementById('login-view');
 const appView = document.getElementById('app-view');
 const panel = document.getElementById('panel');
 const flashEl = document.getElementById('flash');
-let currentTab = 'pages';
-let token = localStorage.getItem(TOKEN_KEY) || '';
+function readJsToken() {
+  const fromStore = localStorage.getItem(TOKEN_KEY) || '';
+  const match = document.cookie.match(/(?:^|; )floriva_seo_js_token=([^;]*)/);
+  const fromCookie = match ? decodeURIComponent(match[1]) : '';
+  return fromStore || fromCookie;
+}
+
+let token = readJsToken();
+if (token) localStorage.setItem(TOKEN_KEY, token);
 
 const qs = (sel, root = document) => root.querySelector(sel);
 
@@ -23,11 +30,25 @@ async function api(path, options = {}) {
     headers['Content-Type'] = 'application/json';
     options.body = JSON.stringify(options.body);
   }
-  const res = await fetch(`${apiBase}${path}`, { ...options, headers });
+  options.credentials = 'include';
+  let res;
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 20000);
+    res = await fetch(`${apiBase}${path}`, { ...options, headers, signal: controller.signal });
+    clearTimeout(timer);
+  } catch (error) {
+    if (error && error.name === 'AbortError') {
+      throw new Error('Sign in timed out. Restart floriva-backend on the server and try again.');
+    }
+    throw new Error('Cannot reach the API. Open https://api.florivagifts.com/seo-cms/ and check floriva-backend is online.');
+  }
   const data = await res.json().catch(() => ({}));
+  if (res.status === 429) {
+    throw new Error(data.message || 'Too many login attempts. Restart floriva-backend on the server, wait a minute, then try once.');
+  }
   if (res.status === 401) {
-    logout();
-    throw new Error(data.message || 'Please sign in again');
+    throw new Error(data.message || 'Invalid username or password');
   }
   if (!res.ok || data.success === false) {
     throw new Error(data.message || 'Request failed');
@@ -44,28 +65,22 @@ function showApp() {
 function logout() {
   token = '';
   localStorage.removeItem(TOKEN_KEY);
-  loginView.hidden = false;
-  appView.hidden = true;
+  window.location.href = '/api/admin/logout';
 }
 
-qs('#login-form').addEventListener('submit', async (event) => {
-  event.preventDefault();
-  const err = qs('#login-error');
-  err.hidden = true;
-  const form = new FormData(event.target);
-  try {
-    const data = await api('/admin/login', {
-      method: 'POST',
-      body: { username: form.get('username'), password: form.get('password') },
-    });
-    token = data.token;
-    localStorage.setItem(TOKEN_KEY, token);
-    showApp();
-  } catch (error) {
-    err.hidden = false;
-    err.textContent = error.message;
-  }
-});
+const params = new URLSearchParams(window.location.search);
+const loginError = qs('#login-error');
+if (loginError && params.get('error')) {
+  loginError.textContent = params.get('error');
+}
+
+if (token) {
+  showApp();
+} else {
+  api('/admin/me')
+    .then(() => showApp())
+    .catch(() => {});
+}
 
 qs('#logout').addEventListener('click', logout);
 
@@ -446,4 +461,3 @@ async function renderGoogle() {
   });
 }
 
-if (token) showApp();

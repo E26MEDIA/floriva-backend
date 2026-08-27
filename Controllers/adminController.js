@@ -1,5 +1,6 @@
 const jwt = require("jsonwebtoken");
 const Admin = require("../Model/Admin");
+const { COOKIE_NAME } = require("../Middlewares/adminAuth");
 
 const generateAdminToken = (admin) =>
   jwt.sign(
@@ -7,6 +8,9 @@ const generateAdminToken = (admin) =>
     process.env.JWT_SECRET,
     { expiresIn: "7d" }
   );
+
+const isFormLogin = (req) =>
+  String(req.headers["content-type"] || "").includes("application/x-www-form-urlencoded");
 
 const DEFAULT_ADMIN_USERNAME = "florivaadmin";
 const DEFAULT_ADMIN_PASSWORD = "giftsFLORIVA#321";
@@ -60,6 +64,9 @@ exports.login = async (req, res) => {
     const { username, password } = req.body;
 
     if (!username?.trim() || !password) {
+      if (isFormLogin(req)) {
+        return res.redirect(302, "/api/cms?error=" + encodeURIComponent("Username and password are required"));
+      }
       return res.status(400).json({
         success: false,
         message: "Username and password are required",
@@ -71,6 +78,9 @@ exports.login = async (req, res) => {
     }).select("+password");
 
     if (!admin || !(await admin.comparePassword(password))) {
+      if (isFormLogin(req)) {
+        return res.redirect(302, "/api/cms?error=" + encodeURIComponent("Invalid username or password"));
+      }
       return res.status(401).json({
         success: false,
         message: "Invalid username or password",
@@ -78,6 +88,26 @@ exports.login = async (req, res) => {
     }
 
     const token = generateAdminToken(admin);
+    const host = String(req.headers.host || "");
+    const cookieBase = {
+      secure:
+        host.includes("florivagifts.com") ||
+        req.secure ||
+        req.headers["x-forwarded-proto"] === "https",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    };
+    try {
+      res.cookie("floriva_admin_token", token, { ...cookieBase, httpOnly: true });
+      res.cookie("floriva_seo_js_token", token, { ...cookieBase, httpOnly: false });
+    } catch (cookieError) {
+      console.error("Admin cookie not set:", cookieError);
+    }
+
+    if (isFormLogin(req)) {
+      return res.redirect(302, "/seo-cms/?v=8");
+    }
 
     res.json({
       success: true,
@@ -89,8 +119,26 @@ exports.login = async (req, res) => {
       },
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error("Admin login failed:", error);
+    if (isFormLogin(req)) {
+      return res.redirect(
+        302,
+        "/api/cms?error=" + encodeURIComponent(error.message || "Login failed")
+      );
+    }
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Login failed",
+    });
   }
+};
+
+exports.logout = (req, res) => {
+  res.clearCookie(COOKIE_NAME, { path: "/" });
+  if (String(req.headers.accept || "").includes("text/html")) {
+    return res.redirect(302, "/seo-cms/");
+  }
+  res.json({ success: true });
 };
 
 exports.getMe = async (req, res) => {
