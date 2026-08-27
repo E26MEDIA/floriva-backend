@@ -56,6 +56,13 @@ test('CORS allows Floriva hosts and does not throw on unknown origins', () => {
   assert.equal(isAllowedOrigin('https://evil.example'), false);
 });
 
+test('CMS UI controller exports login handlers', () => {
+  const cms = require('../Controllers/cmsUiController');
+  assert.equal(typeof cms.loginPage, 'function');
+  assert.equal(typeof cms.login, 'function');
+  assert.equal(typeof cms.home, 'function');
+});
+
 test('ensureUniqueSlug increments when taken', async () => {
   const taken = new Set(['roses', 'roses-2']);
   const Model = {

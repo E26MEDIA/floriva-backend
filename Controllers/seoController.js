@@ -70,7 +70,7 @@ exports.getPublicConfig = async (req, res) => {
         notFoundTitle: settings.notFoundTitle,
         notFoundBody: settings.notFoundBody,
         google: publicGoogle(settings),
-        cmsVersion: 'login-v8',
+        cmsVersion: 'login-v9',
       },
     });
   } catch (error) {
