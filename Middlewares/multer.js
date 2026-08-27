@@ -8,6 +8,7 @@ const dirs = [
   'uploads/categories/',
   'uploads/vendors/',
   'uploads/site-content/',
+  'uploads/blog/',
 ];
 
 dirs.forEach((dir) => {
@@ -52,6 +53,7 @@ const productUploader  = multer({ storage: makeStorage('uploads/products/'),  fi
 const categoryUploader = multer({ storage: makeStorage('uploads/categories/'), fileFilter: imageFilter, limits: { fileSize: 5 * 1024 * 1024 } });
 const vendorUploader   = multer({ storage: makeStorage('uploads/vendors/'),    fileFilter: imageFilter, limits: { fileSize: 5 * 1024 * 1024 } });
 const siteContentUploader = multer({ storage: makeStorage('uploads/site-content/'), fileFilter: imageFilter, limits: { fileSize: 5 * 1024 * 1024 } });
+const blogUploader = multer({ storage: makeStorage('uploads/blog/'), fileFilter: imageFilter, limits: { fileSize: 5 * 1024 * 1024 } });
 
 // ─── Exports ──────────────────────────────────────────────────────────────────
 module.exports = {
@@ -71,4 +73,5 @@ module.exports = {
   ]),
 
   siteContentUpload: siteContentUploader.single('image'),
+  blogUpload: blogUploader.single('image'),
 };

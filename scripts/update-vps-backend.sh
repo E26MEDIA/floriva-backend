@@ -18,7 +18,7 @@ git reset --hard origin/main
 
 npm ci --omit=dev
 
-mkdir -p uploads/products uploads/categories uploads/site-content uploads/vendors
+mkdir -p uploads/products uploads/categories uploads/site-content uploads/vendors uploads/blog
 
 if pm2 describe floriva-api > /dev/null 2>&1; then
   pm2 restart floriva-api

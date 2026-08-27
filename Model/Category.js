@@ -20,7 +20,28 @@ const categorySchema = new Schema({
         type: String,   // URL or path to the category image
         trim: true
     },
-    subCategories: [subCategorySchema]  // Array of subcategories
+    subCategories: [subCategorySchema],
+    slug: {
+        type: String,
+        trim: true,
+        lowercase: true,
+    },
+    metaTitle: {
+        type: String,
+        default: '',
+        trim: true,
+    },
+    metaDescription: {
+        type: String,
+        default: '',
+        trim: true,
+    },
+    robotsIndex: {
+        type: Boolean,
+        default: true,
+    },
 }, { timestamps: true });
+
+categorySchema.index({ slug: 1 }, { unique: true, sparse: true });
 
 module.exports = mongoose.model('Category', categorySchema);

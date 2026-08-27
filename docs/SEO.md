@@ -1,0 +1,50 @@
+# SEO & Blog CMS
+
+Admins can manage SEO and publish blogs **without further website code changes**, using:
+
+- CMS UI: `https://api.florivagifts.com/seo-cms/`
+- Same admin username/password as the main Floriva admin panel
+
+One-time website work is still required so the storefront **reads** these settings (meta tags, GTM, 404, slugs). After that, SEO edits happen only in the CMS.
+
+## What you can manage
+
+| Area | CMS tab | Notes |
+|------|---------|--------|
+| Meta title, meta description, URL, index/noindex | Pages | Changing a URL writes a 301 redirect |
+| Blog posts, headings H1–H3, images + ALT, internal links, meta, slug | Blog | Draft or publish |
+| Product title, description, slug, meta, image ALT | Products | SEO-friendly `/product/{slug}` |
+| 301/302 redirects | Redirects | From URL → To URL |
+| XML sitemap, robots.txt, 404 copy, URL prefixes | Technical SEO | `/sitemap.xml` and `/robots.txt` on the API |
+| GA4, GTM, Search Console verification | Google tools | Paste IDs / verification file |
+
+## Public API (for the website)
+
+- `GET /api/seo/public` — GA4 ID, GTM ID, Search Console meta, default titles, 404 copy
+- `GET /api/seo/resolve?path=/about` — meta + robots + redirect or 404 for a path
+- `GET /api/blog` and `GET /api/blog/:slug` — published posts
+- `GET /api/productview/:slug` — product by SEO slug (ObjectIds still work)
+- `GET /sitemap.xml` and `GET /robots.txt`
+
+On the **public domain** (`www.florivagifts.com`), proxy `/sitemap.xml` and `/robots.txt` to the API so Google sees them on the website origin.
+
+### Storefront checklist (one-time)
+
+1. On each route, call `/api/seo/resolve?path=...` and set `<title>`, meta description, and `<meta name="robots">`.
+2. If `type` is `redirect`, issue the returned 301/302.
+3. If `type` is `not_found`, render the 404 title/body from the payload (HTTP 404).
+4. Inject GTM / GA4 from `/api/seo/public`.
+5. Use product and blog slugs in URLs (`/product/{slug}`, `/blog/{slug}`).
+6. Proxy sitemap and robots on the public hostname.
+
+## Google tools
+
+These cannot be “granted” from the server; they live on Google accounts.
+
+1. **Google Tag Manager** — create a container, paste `GTM-XXXX` into Google tools. Frontend reads it from `/api/seo/public`.
+2. **GA4** — create a property, paste `G-XXXXXXXX` the same way (or publish GA4 via GTM only).
+3. **Search Console** — add `https://www.florivagifts.com`, verify with the meta tag or `google*.html` file stored in Google tools. Then submit `https://www.florivagifts.com/sitemap.xml`.
+
+## Admin API
+
+All `/api/admin/seo/*` and `/api/admin/blog*` routes require a Bearer admin JWT.
