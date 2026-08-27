@@ -35,10 +35,17 @@ git fetch origin "$BRANCH"
 git reset --hard "origin/$BRANCH"
 mkdir -p uploads/blog
 pm2 restart "$APP_NAME" --update-env
-sleep 2
+echo "==> waiting for port 7000"
+for i in 1 2 3 4 5 6 7 8 9 10; do
+  if curl -sf -o /dev/null --max-time 2 http://127.0.0.1:7000/api/cms; then
+    break
+  fi
+  sleep 1
+done
 echo "==> public payload:"
-curl -sS http://127.0.0.1:7000/api/seo/public
+curl -sS --max-time 5 http://127.0.0.1:7000/api/seo/public || true
 echo
 echo "==> signin page:"
-curl -sI http://127.0.0.1:7000/api/cms | head -n 8
+curl -sI --max-time 5 http://127.0.0.1:7000/api/cms | head -n 8 || true
 echo "==> Open: https://api.florivagifts.com/api/cms"
+pm2 logs "$APP_NAME" --lines 30 --nostream

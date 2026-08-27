@@ -124,12 +124,18 @@ app.use((err, req, res, _next) => {
   res.status(status).json({ success: false, message });
 });
 
+app.listen(port, '0.0.0.0', () => {
+  console.log(`Server running on port ${port}`);
+});
+
 mongoDB().then(async () => {
-  await seedDefaultAdmin();
-  await seedSiteContent();
-  await seedAdminSettings();
-  await seedSeo();
-  app.listen(port, () => {
-    console.log(`Server running on port ${port}`);
-  });
+  try {
+    await seedDefaultAdmin();
+    await seedSiteContent();
+    await seedAdminSettings();
+    await seedSeo();
+    console.log('SEO/admin seeds complete');
+  } catch (error) {
+    console.error('Startup seed failed (API still running):', error);
+  }
 });
