@@ -6,8 +6,10 @@ const DEFAULT_ORIGINS = [
   "https://florivagifts.com",
   "https://www.florivagifts.com",
   "https://admin.florivagifts.com",
+  "https://api.florivagifts.com",
   "http://localhost:3000",
   "http://localhost:5173",
+  "http://localhost:7000",
 ];
 
 const buildAllowedOrigins = () => {
@@ -27,7 +29,12 @@ const buildAllowedOrigins = () => {
 const corsMiddleware = cors({
   origin(origin, callback) {
     const allowed = buildAllowedOrigins();
-    if (!origin || allowed.includes(origin)) {
+    if (
+      !origin ||
+      allowed.includes(origin) ||
+      origin.includes("localhost") ||
+      origin.endsWith(".florivagifts.com")
+    ) {
       callback(null, true);
       return;
     }
@@ -64,6 +71,8 @@ const otpLimiter = rateLimit({
 
 const helmetMiddleware = helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" },
+  contentSecurityPolicy: false,
+  frameguard: false,
 });
 
 module.exports = {

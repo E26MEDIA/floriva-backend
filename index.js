@@ -22,6 +22,7 @@ const siteContentRoutes = require("./Router/siteContentRoutes");
 const settingsRoutes = require("./Router/settingsRoutes");
 const geoRoutes = require("./Router/geoRoutes");
 const seoRoutes = require("./Router/seoRoutes");
+const cmsUiRoutes = require("./Router/cmsUiRoutes");
 const { seedDefaultAdmin } = require("./Controllers/adminController");
 const { seedSiteContent } = require("./Controllers/siteContentController");
 const { seedAdminSettings } = require("./Controllers/settingsController");
@@ -81,12 +82,17 @@ app.use('/api', adminRoutes);
 app.use('/api', siteContentRoutes);
 app.use('/api', settingsRoutes);
 app.use('/api', geoRoutes);
+app.use('/api/cms', cmsUiRoutes);
 app.use('/api', seoRoutes);
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/uploads', express.static('uploads'));
+app.use('/cms', express.static(path.join(__dirname, 'public/cms')));
 app.use('/seo-cms', express.static(path.join(__dirname, 'public/seo-cms')));
 app.get('/seo-cms', (req, res) => {
-  res.redirect(301, '/seo-cms/');
+  res.redirect(302, '/api/cms/blog');
+});
+app.get('/seo-cms/', (req, res) => {
+  res.redirect(302, '/api/cms/blog');
 });
 app.get('/blog-content.css', (req, res) => {
   res.sendFile(path.join(__dirname, 'public/blog-content.css'));
