@@ -84,13 +84,13 @@ app.use('/api', geoRoutes);
 app.use('/api', seoRoutes);
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/uploads', express.static('uploads'));
-app.get('/seo-cms', (req, res) => {
-  res.redirect(301, '/seo-cms/');
-});
-app.get('/seo-cms/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public/seo-cms/index.html'));
-});
-app.use('/seo-cms', express.static(path.join(__dirname, 'public/seo-cms')));
+app.use(
+  '/seo-cms',
+  express.static(path.join(__dirname, 'public/seo-cms'), {
+    index: 'index.html',
+    redirect: false,
+  })
+);
 app.get('/sitemap.xml', getSitemap);
 app.get('/robots.txt', getRobots);
 app.get('/:filename', getSearchConsoleFile);
